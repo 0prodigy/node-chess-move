@@ -23,7 +23,7 @@ function prepareData() {
           el.children[1].children[0].children[3].children[0].data;
         data[code_name] = {
           move_name,
-          code_value,
+          code_value: code_value.trim(),
         };
       });
       // write the data to a file
@@ -34,6 +34,19 @@ function prepareData() {
       return data;
     })
     .catch((err) => console.log(err));
+}
+
+function get_next_move(data, current_move) {
+  if (data) {
+    const current_move_index = data.code_value.indexOf(current_move);
+    console.log(current_move_index, data);
+    if (current_move_index !== -1) {
+      const next_move = data.code_value.split(" ")[current_move_index + 1];
+      return next_move;
+    }
+  } else {
+    return "";
+  }
 }
 
 app.get("/", (_, res) => {
@@ -58,11 +71,18 @@ app.get("/:code", (req, res) => {
 
 app.get("/*", (req, res) => {
   const key = req.url.split("/")[1];
-  const length = req.url.split("/").length;
-  console.log(length);
-  const value = myCache.get(key);
+  const params = req.url.split("/");
+  const value = myCache.get(key) || data[key];
   if (value) {
-    res.send(value);
+    if (params.length > 2) {
+      if (params[params.length - 1] == "") {
+        params.pop();
+      }
+      const next_move = get_next_move(value, params[params.length - 1]);
+      res.send(next_move);
+    } else {
+      res.send(value);
+    }
   } else {
     res.status(404).send("Not Found");
   }
